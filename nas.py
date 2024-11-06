@@ -1,32 +1,16 @@
 import os
+import argparse
 import numpy as np
 import tensorflow as tf
 import autokeras as ak
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix, precision_score, recall_score, f1_score
+from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 from tensorflow.keras.utils import to_categorical
 import matplotlib.pyplot as plt
-from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
-
 import time
 
-# Set your data paths and result directory
-data_dir = '/data/home/mk1723/CampusVisionChallengeFinal/MergeDataset'
-result_dir = '/data/home/mk1723/soybean/results'
-
-# Parameters
-batch_size = 64
-image_size = (224, 224)
-num_classes = 10
-initial_epochs = 15  # For architecture search
-retrain_epochs = 100  # For retraining the best architecture
-max_trials = 50  # AutoKeras search space trials
-
-# List class names from the directory
-class_names = os.listdir(data_dir)
-
-# Mapping classes to integers
-class_mapping = {class_name: idx for idx, class_name in enumerate(class_names)}
+# Mapping classes to integers (this will be populated based on the classes in the dataset)
+class_mapping = {}
 
 # Function to format time
 def format_time(seconds):
@@ -55,114 +39,106 @@ def dataset_to_numpy(dataset):
     labels = np.array([class_mapping[label.decode()] for label in labels])  # Map string labels to integers
     return np.array(images), labels
 
-# Step 1: Load the full dataset
-data = load_image_data(data_dir, image_size=image_size, batch_size=batch_size)
+def main(args):
+    # Set parameters
+    batch_size = 64
+    image_size = (224, 224)
+    num_classes = 10
+    initial_epochs = 15
+    retrain_epochs = 100
+    max_trials = 50
 
-# Convert the dataset to NumPy arrays for splitting
-X, y = dataset_to_numpy(data)
+    # List class names from the directory and update class_mapping
+    class_names = os.listdir(args.data_dir)
+    global class_mapping
+    class_mapping = {class_name: idx for idx, class_name in enumerate(class_names)}
 
-# Print the total number of images in the dataset
-print(f"Total number of images in the dataset: {len(X)}")
+    # Step 1: Load and preprocess the dataset
+    data = load_image_data(args.data_dir, image_size=image_size, batch_size=batch_size)
+    X, y = dataset_to_numpy(data)
+    y_one_hot = to_categorical(y, num_classes=num_classes)
 
-# One-hot encode labels for training
-y_one_hot = to_categorical(y, num_classes=num_classes)
+    # Split data into train, validation, and test sets
+    X_train_val, X_test, y_train_val, y_test = train_test_split(X, y_one_hot, test_size=0.2, random_state=121)
+    X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2, random_state=121)
 
-# Step 2: Split the data once (80% train/validation, 20% test)
-X_train_val, X_test, y_train_val, y_test = train_test_split(X, y_one_hot, test_size=0.2, random_state=121)
+    train_data = tf.data.Dataset.from_tensor_slices((X_train, y_train)).batch(batch_size)
+    val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
+    test_data = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(batch_size)
 
-# Print the number of images in the initial split
-print(f"Number of images in the 80% training/validation split: {len(X_train_val)}")
-print(f"Number of images in the 20% test split: {len(X_test)}")
+    # Step 2: Perform architecture search with AutoKeras
+    input_node = ak.ImageInput()
+    output_node = ak.ImageBlock(block_type='xception')(input_node)
+    output_node = ak.ClassificationHead()(output_node)
 
-# Step 3: Further split the 80% into 80% train and 20% validation for both architecture search and retraining
-X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2, random_state=121)
+    clf = ak.AutoModel(
+        inputs=input_node,
+        outputs=output_node,
+        overwrite=True,
+        max_trials=max_trials,
+        objective='val_accuracy',
+        project_name='autokeras_search'
+    )
 
-# Print the number of images in the training and validation split for architecture search and retraining
-print(f"Number of images used for training: {len(X_train)}")
-print(f"Number of images used for validation: {len(X_val)}")
+    print("Starting architecture search...")
+    start_time = time.time()
+    clf.fit(train_data, epochs=initial_epochs, validation_data=val_data, verbose=1)
+    arch_search_time = time.time() - start_time
+    print(f"Architecture search completed in {format_time(arch_search_time)}")
 
-# Create datasets for training, validation, and testing
-train_data = tf.data.Dataset.from_tensor_slices((X_train, y_train)).batch(batch_size)
-val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
-test_data = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(batch_size)
+    # Step 3: Save the best architecture and retrain
+    best_model = clf.export_model()
+    best_model.save(args.model_save_path)
 
-# Step 4: Perform AutoKeras architecture search (using train_data and val_data)
-input_node = ak.ImageInput()
-output_node = ak.ImageBlock(block_type='xception')(input_node)
-output_node = ak.ClassificationHead()(output_node)
+    print("Retraining best architecture with more epochs...")
+    best_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(args.best_weights_file, monitor='val_accuracy', save_best_only=True, mode='max', save_weights_only=True)
 
-clf = ak.AutoModel(
-    inputs=input_node,
-    outputs=output_node,
-    overwrite=True,
-    max_trials=max_trials,
-    objective='val_accuracy',
-    project_name='autokeras_search'
-)
+    start_time = time.time()
+    best_model.fit(train_data, epochs=retrain_epochs, validation_data=val_data, callbacks=[checkpoint], verbose=1)
+    retrain_time = time.time() - start_time
+    print(f"Retraining completed in {format_time(retrain_time)}")
 
-print("Starting architecture search...")
-start_time = time.time()
-clf.fit(train_data, epochs=initial_epochs, validation_data=val_data, verbose=1)
-arch_search_time = time.time() - start_time
-print(f"Architecture search completed in {format_time(arch_search_time)}")
+    best_model.load_weights(args.best_weights_file)
 
-# Step 5: Save the best architecture found during the search
-best_model = clf.export_model()
-model_save_path = '/data/home/mk1723/CampusVisionChallengeFinal/best_model.keras'  
-best_model.save(model_save_path)
+    # Step 4: Evaluate the model on the test set
+    print("Evaluating on the test set...")
+    start_time = time.time()
+    test_loss, test_accuracy = best_model.evaluate(test_data)
+    inference_time = time.time() - start_time
+    print(f"Inference time: {format_time(inference_time)}")
+    print(f"Test Loss: {test_loss}, Test Accuracy: {test_accuracy}")
 
-# Step 6: Retrain the best architecture using the same split for consistency
-print("Retraining best architecture with more epochs...")
+    # Step 5: Generate classification metrics and save results
+    y_pred = best_model.predict(test_data)
+    y_pred_classes = np.argmax(y_pred, axis=1)
+    y_true_classes = np.argmax(y_test, axis=1)
 
-# Print the number of images used for retraining (same split as before)
-print(f"Number of images used for retraining: {len(X_train)}")
+    precision = precision_score(y_true_classes, y_pred_classes, average='weighted')
+    recall = recall_score(y_true_classes, y_pred_classes, average='weighted')
+    f1 = f1_score(y_true_classes, y_pred_classes, average='weighted')
+    print(f"Precision: {precision}, Recall: {recall}, F1-Score: {f1}")
 
-# Compile the best model
-best_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    # Confusion matrix
+    cm = confusion_matrix(y_true_classes, y_pred_classes)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title("Confusion Matrix")
+    plt.savefig(os.path.join(args.result_dir, 'confusion_matrix.png'))
+    plt.show()
 
-# Save the best weights during retraining
-best_weights_file = '/data/home/mk1723/CampusVisionChallengeFinal/best_weights.weights.h5'
-checkpoint = tf.keras.callbacks.ModelCheckpoint(best_weights_file, monitor='val_accuracy', save_best_only=True, mode='max', save_weights_only=True)
+    # Save classification report
+    class_report = classification_report(y_true_classes, y_pred_classes, target_names=class_names)
+    with open(os.path.join(args.result_dir, 'classification_report.txt'), 'w') as f:
+        f.write(class_report)
+    print("Classification report saved.")
 
-start_time = time.time()
-best_model.fit(train_data, epochs=retrain_epochs, validation_data=val_data, callbacks=[checkpoint], verbose=1)
-retrain_time = time.time() - start_time
-print(f"Retraining completed in {format_time(retrain_time)}")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run an AutoKeras architecture search, retraining, and evaluation on a test set.")
+    parser.add_argument("--data_dir", type=str, required=True, help="Path to the dataset directory")
+    parser.add_argument("--result_dir", type=str, required=True, help="Path to save results")
+    parser.add_argument("--model_save_path", type=str, required=True, help="Path to save the best model")
+    parser.add_argument("--best_weights_file", type=str, required=True, help="Path to save the best weights file")
 
-# Load the best weights after retraining
-best_model.load_weights(best_weights_file)
-
-# Step 7: Evaluate the model on the held-out 20% test set
-print("Evaluating on the test set...")
-start_time = time.time()
-test_loss, test_accuracy = best_model.evaluate(test_data)
-inference_time = time.time() - start_time
-print(f"Inference time: {format_time(inference_time)}")
-print(f"Test Loss: {test_loss}, Test Accuracy: {test_accuracy}")
-
-# Generate confusion matrix and classification report
-y_pred = best_model.predict(test_data)
-y_pred_classes = np.argmax(y_pred, axis=1)
-y_true_classes = np.argmax(y_test, axis=1)
-
-precision = precision_score(y_true_classes, y_pred_classes, average='weighted')
-recall = recall_score(y_true_classes, y_pred_classes, average='weighted')
-f1 = f1_score(y_true_classes, y_pred_classes, average='weighted')
-
-print(f"Precision: {precision}, Recall: {recall}, F1-Score: {f1}")
-
-# Step 8: Confusion matrix and saving results
-cm = confusion_matrix(y_true_classes, y_pred_classes)
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
-disp.plot(cmap=plt.cm.Blues)
-plt.title("Confusion Matrix")
-confusion_matrix_path = '/data/home/mk1723/CampusVisionChallengeFinal/cm.png'
-plt.savefig(confusion_matrix_path)
-plt.show()
-
-# Save classification report
-class_report = classification_report(y_true_classes, y_pred_classes, target_names=class_names)
-classification_path = os.path.join(result_dir, 'classification_report.txt')
-with open(classification_path, 'w') as f:
-    f.write(class_report)
-print("Classification report saved.")
+    args = parser.parse_args()
+    main(args)
