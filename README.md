@@ -45,19 +45,27 @@ $$
 
 where $$\hat{y}_i$$ represents the predicted probability for the correct class.
 
-## Running the Evaluation Script
+## Running the NAS Script
 
 To run the NAS on the training dataset, use the following command:
 
 ```bash
-python script_name.py --data_dir path/to/dataset --result_dir path/to/results --model_save_path path/to/best_model.keras --best_weights_file path/to/best_weights.h5
+python nas.py --data_dir path/to/dataset --result_dir path/to/results --model_save_path path/to/best_model.keras --best_weights_file path/to/best_weights.h5
+```
 
 
+## Retraining the best architecture from scratch using training data
+To retrain the best model obtained in NAS using the training data, use the following command:
 
-## Running the Evaluation Script
+```bash
+python train.py --data_dir path/to/dataset --result_dir path/to/results --best_weights_file path/to/results/best_model.weights.h5
+```
+
+
+## Evaluating the best model on test data
 
 To evaluate the trained model on a new test dataset, use the following command:
 
 ```bash
-python script_name.py --test_dir path/to/test_data --weights_path path/to/best_model.weights.h5
-
+python evaluate_model.py --test_dir path/to/test_data --weights_path path/to/best_model.weights.h5
+```
