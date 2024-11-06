@@ -44,3 +44,12 @@ L_{\text{cross-entropy}} = - \sum_{i=1}^{N} y_i \log(\hat{y}_i)
 $$
 
 where $$\hat{y}_i$$ represents the predicted probability for the correct class.
+
+
+## Running the Evaluation Script
+
+To evaluate the trained model on a new test dataset, use the following command:
+
+```bash
+python script_name.py --test_dir path/to/test_data --weights_path path/to/best_model.weights.h5
+
