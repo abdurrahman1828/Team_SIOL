@@ -45,6 +45,14 @@ $$
 
 where $$\hat{y}_i$$ represents the predicted probability for the correct class.
 
+## Running the Evaluation Script
+
+To run the NAS on the training dataset, use the following command:
+
+```bash
+python script_name.py --data_dir path/to/dataset --result_dir path/to/results --model_save_path path/to/best_model.keras --best_weights_file path/to/best_weights.h5
+
+
 
 ## Running the Evaluation Script
 
