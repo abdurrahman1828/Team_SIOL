@@ -78,7 +78,7 @@ We will save the best model weights after training and use them for future evalu
 
 ### Evaluating the best model on test data
 
-To evaluate the trained model on a new test dataset, use the following command and specify the directories (you may place the best weights on `model` folder:
+To evaluate the trained model on a new test dataset, use the following command and specify the directories (you may place the best weights in the `model` folder:
 
 ```bash
 python evaluate_model.py --test_dir path/to/test_data --weights_path path/to/best_model.weights.h5
