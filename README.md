@@ -1,5 +1,11 @@
 # Team_SIOL
 
+## Team Members
+
+1. Manideep Kolla (mk1723@msstate.edu) [Team Leader]
+2. Abdur Rahman (ar2806@msstate.edu)
+3. Amirhossein Eskorouchi (ae1028@msstate.edu)
+   
 ## Automated Neural Architecture Search for Optimal Model Design
 
 This project leverages Neural Architecture Search (NAS) using AutoKeras to discover the best-performing model architecture for our task automatically. We start with a search space, utilize NAS to explore and optimize model structures, and then retrain the best-found architecture from scratch to leverage its full potential. Finally, we saved the optimized model weights and provided a script to evaluate the model on unseen test data for the **AI Club Campus Vision Challenge**.
@@ -10,8 +16,8 @@ NAS is a technique that aims to discover optimal neural network structures, ofte
 
 The process consists of three main components:
 
-1. **Search Space:** In this project, we utilized the original search space defined in the ```AutoKeras``` library. This search space included the normalization layer, augmentation layer, and feature extraction block type. On top of these, we had the classification layer that involved the choice of spatial reduction type and several dropout options. The spatial reduction types included different transformations of the features including flattening, taking the global average, or global maximum. The search space also included the choice of the optimizer and learning rate. Moreover, the augmentation layer had several options: translation, horizontal flip, vertical flip, rotation, zoom, and contrast. The most important choice in this search space is the choice of feature extraction block. The options for this block include a vanilla architecture with several convolutional, max-pooling, and dropout layers; several ResNet architectures; an Xception architecture; and several EfficientNet architectures.
-2. **Search Strategy:** We employed Bayesian Optimization (BO) as the search strategy. Using BO we tried to solve the following optimization problem:
+1. **Search Space:** In this project, we utilized the original search space defined in the `AutoKeras` library. This search space included the `normalization` layer, `augmentation` layer, and `feature extraction` block type. On top of these, we had the `classification` layer that involved the choice of `spatial reduction` type and several `dropout` options. The spatial reduction types included different transformations of the features, including flattening, taking the global average or global maximum. The search space also included the choice of the `optimizer` and `learning rate`. Moreover, the augmentation layer had several options: `translation`, `horizontal flip`, `vertical flip`, `rotation`, `zoom`, and `contrast`. The most important choice in this search space is the choice of feature extraction block. The options for this block include a vanilla architecture with several `convolutional`, `max-pooling`, and `dropout` layers; several ResNet architectures; an Xception architecture; and several EfficientNet architectures.
+2. **Search Strategy:** We employed Bayesian Optimization (BO) as the search strategy. Using BO, we tried to solve the following optimization problem:
 
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; **Objective:**
 
