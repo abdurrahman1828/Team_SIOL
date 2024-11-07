@@ -32,6 +32,14 @@ where $f$ is the objective function, in this case, validation accuracy, $C_{lik_
 
 ## Code Usage
 
+### Installation
+
+The only critical dependency for training is `AutoKeras`. However, for running the `evaluate_model.py`, the regular TensorFlow with scikit-learn is good enough. If you still need to install them, please run the following command:
+
+```bash
+pip install -r requirements.txt
+```
+
 ### Running the NAS Script
 
 To run the NAS on the training dataset, use the following command and specify the directories:
