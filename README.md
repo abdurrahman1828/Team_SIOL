@@ -50,6 +50,16 @@ To retrain the best model obtained in NAS using the training data, use the follo
 python train.py --data_dir path/to/dataset --result_dir path/to/results --best_weights_file path/to/results/best_model.weights.h5
 ```
 
+#### Training and Validation Loss and Accuracy Plots:
+
+<img src="images/loss.jpg" width="425"/> <img src="images/acc.jpg" width="425"/> 
+
+#### Performance metrics on the validation set (80:20 split):
+
+| Metric | Accuracy | Precision | Recall | F1-Score | Log Loss |
+|---|---|---|---|---|---|
+| Value| 0.9923 | 0.9922 | 0.9921 | 0.9921 | 0.0151
+
 We will save the best model weights after training and use it for future evaluation on unseen data from the same label space.
 
 ### Evaluating the best model on test data
