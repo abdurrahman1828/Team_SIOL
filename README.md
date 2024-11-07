@@ -58,9 +58,9 @@ python train.py --data_dir path/to/dataset --result_dir path/to/results --best_w
 
 | Metric | Accuracy | Precision | Recall | F1-Score | Log Loss |
 |---|---|---|---|---|---|
-| Value| 0.9923 | 0.9922 | 0.9921 | 0.9921 | 0.0151
+| Value| 0.9984 | 0.9984 | 0.9984 | 0.9984 | 0.0069
 
-We will save the best model weights after training and use it for future evaluation on unseen data from the same label space.
+We will save the best model weights after training and use them for future evaluation of unseen data from the same label space.
 
 ### Evaluating the best model on test data
 
