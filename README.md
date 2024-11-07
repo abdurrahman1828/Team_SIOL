@@ -60,7 +60,7 @@ python train.py --data_dir path/to/dataset --result_dir path/to/results --best_w
 
 #### Training and Validation Loss and Accuracy Plots:
 
-<img src="images/loss.jpg" width="425"/> <img src="images/acc.jpg" width="425"/> 
+<img src="images/loss.jpg" width="400"/> <img src="images/acc.jpg" width="400"/> 
 
 #### Performance metrics on the validation set (80:20 split):
 
