@@ -39,8 +39,26 @@ where $f$ is the objective function, in this case, validation accuracy, $C_{lik_
 ## Code Usage
 
 ### Installation
+I used Anaconda to create a virtual environment and installed the Cuda toolkit and CuDNN using the following commands in the Anaconda prompt. I used GPU to train and evaluate the model's performance.
 
-The only critical dependency for training is `AutoKeras`. However, for running the `evaluate_model.py`, the regular TensorFlow with scikit-learn is good enough. If you still need to install them, please run the following command:
+First, Clone the repository.
+```bash
+git clone https://github.com/abdurrahman1828/Team_SIOL.git
+cd Team_SIOL
+```
+Then, create the virtual environment.
+```bash
+conda create --name ai python=3.9
+```
+Then, activate the environment. 
+```bash
+conda activate ai
+```
+Then, install the Cuda toolkit and CuDNN:
+```bash
+conda install -c conda-forge cudatoolkit=11.2 cudnn=8.1.0
+```
+To install the other required packages, please run the following command:
 
 ```bash
 pip install -r requirements.txt
